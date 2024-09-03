@@ -1,10 +1,6 @@
-'use client';
+'use client'
 
-// components/EncryptPdf.js
 import React, { useState } from 'react';
-import { PDFDocument } from 'pdf-lib';
-import jsPDF from 'jspdf';
-import 'jspdf-encrypt'; // Import the encryption plugin
 
 const EncryptPdf = () => {
   const [password, setPassword] = useState('');
@@ -37,30 +33,26 @@ const EncryptPdf = () => {
 
     try {
       const fileArrayBuffer = await file.arrayBuffer();
-      const pdfDoc = await PDFDocument.load(fileArrayBuffer);
-
-      const pdfBytes = await pdfDoc.save(); // Save the modified PDF
-
-      // Create a jsPDF instance
-      const jsPDFDoc = new jsPDF({
-        encryption: {
-          userPassword: password,
-          ownerPassword: password,
-          userPermissions: ['print'], // Specify any permissions you want
-        },
+      const response = await fetch('https://5000-jacksonkasi-nextpdfencr-r7ye71p1zyi.ws-us115.gitpod.io/encrypt-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/pdf' },
+        body: fileArrayBuffer,
       });
 
-      // Add the encrypted PDF content to jsPDF instance
-      jsPDFDoc.addFileToVFS('encrypted.pdf', pdfBytes);
-      jsPDFDoc.addPage('encrypted.pdf');
+      if (!response.ok) {
+        throw new Error('Failed to encrypt PDF');
+      }
 
-      // Save the encrypted PDF
-      jsPDFDoc.save(`encrypted_${file.name}`);
+      const encryptedPdfBlob = await response.blob();
+      const downloadUrl = URL.createObjectURL(encryptedPdfBlob);
 
-      // Clean up
-      setErrorMessage('');
+      const link = document.createElement('a');
+      link.href = downloadUrl;
+      link.download = `encrypted_${file.name}`;
+      link.click();
+      URL.revokeObjectURL(downloadUrl);
     } catch (error) {
-      console.error("Error details:", error);
+      console.error('Error details:', error);
       setErrorMessage('Error encrypting the PDF file. Please try again.');
     }
   };
